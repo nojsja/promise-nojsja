@@ -1,8 +1,8 @@
 /* ------------------- 功能测试 ------------------- */
 var promise1 = new Promise(function (resolve, reject) {
+  console.log('Promise1 -> pending');
   setTimeout(function () {
-    console.log('promise1 -> pending');
-    resolve('promise1 -> resolved');
+    resolve('Promise1 -> resolved');
     // reject('promise1 -> rejected');
   }, 1000);
 });
@@ -16,9 +16,9 @@ promise1.then(function (value) {
 promise1.then(function (value) {
 
   var promise = new Promise(function (resolve, reject) {
-    console.log('promise1.then => new promise');
+    console.log('Promise1.then => new Promise');
     setTimeout(function () {
-      resolve('promise1 then => new promise => resolve');
+      resolve('Promise1 then => new Promise => resolve');
     }, 1000)
   });
   promise.then(function (value) {
@@ -41,15 +41,15 @@ var promise2 = new Promise(function (resolve, reject) {
 });
 
 promise2.then(function (value) {
-  throw new Error('test');
+  throw new Error('Error Test');
 }, function (reason) {
-  console.log('promise2 then error: ', reason);
+  console.log('Promise2 then error: ', reason);
 }).catch(function (error) {
-  console.log('promise2 then throw error: ', error);
+  console.log('Promise2 then throw error: ', error);
 });
 
 promise2.catch(function (error) {
-  console.log('promise2 catch error: ', error);
+  console.log('Promise2 catch error: ', error);
 });
 
 
@@ -98,7 +98,7 @@ Promise.race(
 
     new Promise(function (resolve, reject) {
       setTimeout(function () {
-        reject('rece3');
+        reject('race3');
       }, 1000);
     }),
   ]
@@ -110,7 +110,7 @@ Promise.race(
 
 
 /* ------------------- resolve/reject静态方法测试 ------------------- */
-Promise.resolve(' static_resolve').then(function (value) {
+Promise.resolve('static_resolve').then(function (value) {
   console.log('Promise.resolve: ', value);
 }, function (reason) {
   console.log('Promise.reject: ', reason);
