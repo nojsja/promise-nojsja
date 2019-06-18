@@ -9,24 +9,35 @@ function Promise(processor) {
 
   // resolve //
   function resolve(value) {
-    if (self.status === 'pending') {
+    if (self.status !== 'pending') return;
+    
+    var resolveDo = function (_value) {
       self.status = 'fulfilled';
-      self.value = value;
+      self.value = _value;
       self.onFulfilledCallbacks.map(function (callback) {
         callback();
       });
+    };
+    if (value instanceof Promise) {
+      value.then(function (_value) {
+        resolveDo(_value);
+      }, function (_value) {
+        reject(_value);
+      });
+    } else {
+      resolveDo(value);
     }
   }
 
   // reject //
   function reject(reason) {
-    if (self.status === 'pending') {
-      self.status = 'rejected';
-      self.reason = reason;
-      self.onRejectedCallbacks.map(function (callback) {
-        callback(reason);
-      });
-    }
+    if (self.status !== 'pending') return;
+
+    self.status = 'rejected';
+    self.reason = reason;
+    self.onRejectedCallbacks.map(function (callback) {
+      callback(reason);
+    });
   }
 
   // delay to next event loop //
@@ -206,14 +217,14 @@ Promise.race = function (pArray) {
 
 /* ------------------- 返回成功态的promise ------------------- */
 Promise.resolve = function (value) {
-  return new Promise(function (resolve, reject) {
+  return (value instanceof Promise) ? value : new Promise(function (resolve, reject) {
       resolve(value);
   });
 };
 
 /* ------------------- 返回失败态的promise ------------------- */
 Promise.reject = function (reason) {
-  return new Promise(function (resolve, reject) {
+  return (reason instanceof Promise) ? value : new Promise(function (resolve, reject) {
       reject(reason);
   });
 };

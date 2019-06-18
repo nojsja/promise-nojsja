@@ -6,15 +6,12 @@ var promise1 = new Promise(function (resolve, reject) {
     // reject('promise1 -> rejected');
   }, 1000);
 });
-
 promise1.then(function (value) {
   console.log(value);
 }, function (reason) {
   console.log(reason);
 });
-
 promise1.then(function (value) {
-
   var promise = new Promise(function (resolve, reject) {
     console.log('Promise1.then => new Promise');
     setTimeout(function () {
@@ -24,14 +21,23 @@ promise1.then(function (value) {
   promise.then(function (value) {
     console.log(value);
   })
-
   return promise;
-
 }).then(function (value) {
   return new Promise(function (resolve, reject) {
-
   });
 });
+
+const promise3 = new Promise((resolve, reject) => {
+  setTimeout(() => reject('promise3 -> reject'), 1000);
+});
+const promise4 = new Promise((resolve, reject) => {
+  resolve(promise3);
+});
+ promise4.then((value) => {
+   console.log(`promise4 resolve promise3 success value: ${value}`);
+ }, (value2) => {
+   console.log(`promise4 resolve promise3 failed value: ${value2}`);
+ });
 
 
 /* ------------------- 错误处理测试 ------------------- */
