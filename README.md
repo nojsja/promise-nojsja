@@ -12,6 +12,17 @@ onfulfilled 方法，当Promise状态为rejected时，调用 then 的 onrejected
 
 [源代码](https://github.com/NoJsJa/javascript-learning/tree/master/promise-self)
 
+#### Contents
+---------------
+
+* promise.js -- 源代码文件 (node.js / browser)
+
+* promise-test.js -- promise功能测试 (node.js / browser)
+
+* index.html -- promise功能测试静态页面 (browser)
+
+* promise-request.js -- 自己封装的简易promise并行和异步混合请求调用函数 (node.js)
+
 #### 谈谈Promise
 ---------------
 
