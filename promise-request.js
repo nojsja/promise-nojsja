@@ -3,11 +3,11 @@ const Promise = require('./promise');
 /* predefined lib func */
 
 /* 并行构造Promise请求 -> 使用Promise.all */
-const requestPromiseParallel = (infoArray, result) => {
+const requestPromiseParallel = (infoArray) => {
   const array = infoArray instanceof Array ? infoArray : [infoArray];
   const promises = array.map((info) => {
-    const { param, req, api, requestFunc } = info;
-    return requestFunc(param, api, {...req, ...(req.headers || {})});
+    const { param, req, api, requestFunc, data} = info;
+    return requestFunc(param, api, {...req, ...(req.headers || {})}, data);
   });
   return Promise.all(promises);
 };
@@ -28,7 +28,7 @@ const requestPromiseOrder = (infoArray) => {
   };
 
   array.forEach((info) => {
-    const { param, req, api, requestFunc, errorFunc } = info;
+    const { param, req, api, data,requestFunc, errorFunc } = info;
     if (info instanceof Array) {
       if (!promise) {
         promise = requestPromiseParallel(info).then(
@@ -45,13 +45,13 @@ const requestPromiseOrder = (infoArray) => {
       return;
     }
     if (!promise) {
-      promise = requestFunc(param, api, {...req, ...(req.headers || {})}).then(
+      promise = requestFunc(param, api, {...req, ...(req.headers || {})}, data).then(
         resultPushFunc,
         resultPushFunc);
       return;
     }
     promise = promise.then(
-      () => requestFunc(param, api, {...req, ...(req.headers || {})}),
+      () => requestFunc(param, api, {...req, ...(req.headers || {})}, data),
       localErrorFunc(errorFunc)
     ).then(
       resultPushFunc,
@@ -87,7 +87,7 @@ const testParams =
   [ 
     // 按顺序发送请求 //
     // 顺序1
-    { param: '1', req: {headers: {k: 'h'}}, api: '3', requestFunc: request, errorFunc: error },
+    { param: '1', req: {headers: {k: 'h'}},  data, api: '3', requestFunc: request, errorFunc: error },
     // 顺序2
     { param: '1-1', req: {headers: {k: 'h'}}, api: '3-1', requestFunc: request, errorFunc: error },
     // 顺序3
