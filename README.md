@@ -78,6 +78,9 @@ console.log('b');
 通过以上对then方法的分析，我们可以看出，promise.then方法的状态都是独立的，promise.then的回调方法中可以再次返回一个Promise对象，我们姑且把这一过程称为父Promise和子Promise的状态传递和继承，所以在设计then方法时应当考虑then方法返回的其实应该是一个具有独立状态的Promise对象，只不过该Promise对象的状态还需要看then方法传入的两个回调函数是不是返回了另一个Promise对象，如果返回了，那么就要发生状态传递。我们可以用设计模式中观察者模式的思想来定义一个Promise对象，Promise对象可以有三种状态，成功和失败状态的变化会触发各自对应的观察者函数事件，所以每一个Promise.then方法其实就是在对一个Promise对象做状态事件注册，事件注册和状态改变这两个操作是相互独立的。那么如何把当前父Promise的对象状态和then函数中返回的Promise对象的状态联系起来呢？这个逻辑就是下面代码中的`analysisPromise`方法，它的作用就是分析一个回调的返回值，将当前Promise对象状态改变的方法`reject`和`resolve`递归传递下去，各个不同的调用栈对应各个不同的执行上下文，但是目的只有一个就是改变最初传入的那个Promise对象的状态。
 
 * promise.then的设计
+
+根据当前Promise对象的状态将成功和失败的回调函数直接执行(下一次事件循环)或放入队列中等待执行
+
 ```js
 /**
  * [then 应该返回一个全新的Promise对象，不应该与当前Promise存在功能耦合]
@@ -94,7 +97,7 @@ Promise.prototype.then = function (successCallback, errorCallback) {
       // delay to next event loop
       setTimeout(function () {
         try {
-          x = successCallback(self.value);
+          x = successCallback ? successCallback(self.value) : self.value;
           analysisPromise(x, resolve, reject);
         } catch (e) {
           reject(e);
@@ -106,7 +109,7 @@ Promise.prototype.then = function (successCallback, errorCallback) {
       // delay to next event loop
       setTimeout(function () {
         try {
-          x = errorCallback(self.reason);
+          x = errorCallback ? errorCallback(self.reason) : Promise.reject(self.reason);
           analysisPromise(x, resolve, reject);
         } catch (e) {
           reject(e);
@@ -121,7 +124,7 @@ Promise.prototype.then = function (successCallback, errorCallback) {
       setTimeout(function () {
         self.onFulfilledCallbacks.push(function () {
           try {
-            x = successCallback(self.value);
+            x = successCallback ? successCallback(self.value) : self.value;
             // 分析返回值 然后更改 当前promise状态
             analysisPromise(x, resolve, reject);
           } catch (e) {
@@ -131,7 +134,7 @@ Promise.prototype.then = function (successCallback, errorCallback) {
 
         self.onRejectedCallbacks.push(function () {
           try {
-            x = errorCallback ? errorCallback(self.reason) : undefined;
+            x = errorCallback ? errorCallback(self.reason) : Promise.reject(self.reason);
             // 分析返回值 然后更改 当前promise状态
             analysisPromise(x, resolve, reject);
           } catch (e) {
@@ -180,15 +183,28 @@ var analysisPromise = function (x, resolve, reject) {
 
 ##### 其它部分的实现
 * catch方法  
-这边只是简单的捕获了一下错误然后调用回调函数即可。
+捕获处理错误并返回一个resolved状态的Promise对象。
 ```js
-Promise.prototype.catch = function (handleError) {
-  if (this.status === 'pending') {
-    this.onRejectedCallbacks.push(handleError);
-  }else {
-    this.reason && handleError(this.reason);
-  }
-};
+var self = this;
+  var promise = new Promise(function (resolve, reject) {
+    try {
+      analysisPromise(self,
+        function(result) {
+          // resolved -> 返回原始结果
+          resolve(result);
+        },
+        function(error) {
+          // rejected -> 处理错误 -> 返回resolved结果
+          handleError(error);
+          resolve(error);
+        });
+    } catch (e) {
+      // catch error -> 返回resolved结果
+      resolve(e);
+    }
+  });
+
+  return promise;
 ```
 
 * all方法  

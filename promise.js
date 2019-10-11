@@ -96,7 +96,7 @@ Promise.prototype.then = function (successCallback, errorCallback) {
       // delay to next event loop
       setTimeout(function () {
         try {
-          x = successCallback(self.value);
+          x = successCallback ? successCallback(self.value) : self.value;
           analysisPromise(x, resolve, reject);
         } catch (e) {
           reject(e);
@@ -108,7 +108,7 @@ Promise.prototype.then = function (successCallback, errorCallback) {
       // delay to next event loop
       setTimeout(function () {
         try {
-          x = errorCallback(self.reason);
+          x = errorCallback ? errorCallback(self.reason) : Promise.reject(self.reason);
           analysisPromise(x, resolve, reject);
         } catch (e) {
           reject(e);
@@ -123,7 +123,7 @@ Promise.prototype.then = function (successCallback, errorCallback) {
       setTimeout(function () {
         self.onFulfilledCallbacks.push(function () {
           try {
-            x = successCallback(self.value);
+            x = successCallback ? successCallback(self.value) : self.value;
             // 分析返回值 然后更改 当前promise状态
             analysisPromise(x, resolve, reject);
           } catch (e) {
@@ -133,7 +133,7 @@ Promise.prototype.then = function (successCallback, errorCallback) {
 
         self.onRejectedCallbacks.push(function () {
           try {
-            x = errorCallback ? errorCallback(self.reason) : undefined;
+            x = errorCallback ? errorCallback(self.reason) : Promise.reject(self.reason);
             // 分析返回值 然后更改 当前promise状态
             analysisPromise(x, resolve, reject);
           } catch (e) {
@@ -151,11 +151,26 @@ Promise.prototype.then = function (successCallback, errorCallback) {
 
 /* ------------------- 错误捕获 ------------------- */
 Promise.prototype.catch = function (handleError) {
-  if (this.status === 'pending') {
-    this.onRejectedCallbacks.push(handleError);
-  }else {
-    this.reason && handleError(this.reason);
-  }
+  var self = this;
+  var promise = new Promise(function (resolve, reject) {
+    try {
+      analysisPromise(self,
+        function(result) {
+          // resolved -> 返回原始结果
+          resolve(result);
+        },
+        function(error) {
+          // rejected -> 处理错误 -> 返回resolved结果
+          handleError(error);
+          resolve(error);
+        });
+    } catch (e) {
+      // catch error -> 返回resolved结果
+      resolve(e);
+    }
+  });
+
+  return promise;
 };
 
 

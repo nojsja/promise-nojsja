@@ -22,9 +22,6 @@ promise1.then(function (value) {
     console.log(value);
   })
   return promise;
-}).then(function (value) {
-  return new Promise(function (resolve, reject) {
-  });
 });
 
 const promise3 = new Promise((resolve, reject) => {
@@ -43,7 +40,7 @@ const promise4 = new Promise((resolve, reject) => {
 /* ------------------- 错误处理测试 ------------------- */
 var promise2 = new Promise(function (resolve, reject) {
   // throw new Error('promise2 error test.');
-  resolve(true);
+  reject(true);
 });
 
 promise2.then(function (value) {
@@ -51,13 +48,8 @@ promise2.then(function (value) {
 }, function (reason) {
   console.log('Promise2 then error: ', reason);
 }).catch(function (error) {
-  console.log('Promise2 then throw error: ', error);
-});
-
-promise2.catch(function (error) {
   console.log('Promise2 catch error: ', error);
-});
-
+})
 
 /* ------------------- all函数测试 ------------------- */
 Promise.all([
