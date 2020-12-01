@@ -5,28 +5,21 @@ function Promise(processor) {
   self.value = null;  // resolve value
   self.reason = null;  // reject reason
   self.onRejectedCallbacks = [];  // reject callback
-  self.onFulfilledCallbacks = [];  // resolve callback
+  self.onResolvedCallbacks = [];  // resolve callback
 
   // resolve //
   function resolve(value) {
     if (self.status !== 'pending') return;
     
     var resolveDo = function (_value) {
-      self.status = 'fulfilled';
+      self.status = 'resolved';
       self.value = _value;
-      self.onFulfilledCallbacks.map(function (callback) {
+      self.onResolvedCallbacks.map(function (callback) {
         callback();
       });
     };
-    if (value instanceof Promise) {
-      value.then(function (_value) {
-        resolveDo(_value);
-      }, function (_value) {
-        reject(_value);
-      });
-    } else {
-      resolveDo(value);
-    }
+
+    analysisPromise(value, resolveDo, reject);
   }
 
   // reject //
@@ -59,23 +52,19 @@ function Promise(processor) {
  */
 var analysisPromise = function (x, resolve, reject) {
 
-  var then, y;
-  if (x !== undefined && (typeof x === 'object' || typeof x === 'function')) {
-    then = x.then;
+  if (x !== null && (typeof x === 'object' || typeof x === 'function')) {
     // obj Promise
-    if (then && typeof then === 'function') {
-      then.call(x, function (value) {
+    if (x.then && typeof x.then === 'function') {
+      x.then(function (value) {
         // callback return a promise
         analysisPromise(value, resolve, reject);
-      }, function (error) {
-        reject(error);
-      });
+      }, reject);
     // normal
-    }else {
+    } else {
       resolve(x);
     }
   // normal
-  }else {
+  } else {
     resolve(x);
   }
 };
@@ -91,7 +80,7 @@ Promise.prototype.then = function (successCallback, errorCallback) {
   var promise, x;
   var self = this;
 
-  if (self.status === 'fulfilled') {
+  if (self.status === 'resolved') {
     promise = new Promise(function (resolve, reject) {
       // delay to next event loop
       setTimeout(function () {
@@ -118,29 +107,26 @@ Promise.prototype.then = function (successCallback, errorCallback) {
     });
   }else if (self.status === 'pending') {
     promise = new Promise(function (resolve, reject) {
-
       // 延迟到下一个事件循环
-      setTimeout(function () {
-        self.onFulfilledCallbacks.push(function () {
-          try {
-            x = successCallback ? successCallback(self.value) : self.value;
-            // 分析返回值 然后更改 当前promise状态
-            analysisPromise(x, resolve, reject);
-          } catch (e) {
-            reject(e);
-          }
-        });
+      self.onResolvedCallbacks.push(function () {
+        try {
+          x = successCallback ? successCallback(self.value) : self.value;
+          // 分析返回值 然后更改 当前promise状态
+          analysisPromise(x, resolve, reject);
+        } catch (e) {
+          reject(e);
+        }
+      });
 
-        self.onRejectedCallbacks.push(function () {
-          try {
-            x = errorCallback ? errorCallback(self.reason) : Promise.reject(self.reason);
-            // 分析返回值 然后更改 当前promise状态
-            analysisPromise(x, resolve, reject);
-          } catch (e) {
-            reject(e);
-          }
-        });
-      })
+      self.onRejectedCallbacks.push(function () {
+        try {
+          x = errorCallback ? errorCallback(self.reason) : Promise.reject(self.reason);
+          // 分析返回值 然后更改 当前promise状态
+          analysisPromise(x, resolve, reject);
+        } catch (e) {
+          reject(e);
+        }
+      });
     });
 
   }

@@ -24,17 +24,28 @@ promise1.then(function (value) {
   return promise;
 });
 
-const promise3 = new Promise((resolve, reject) => {
-  setTimeout(() => reject('promise3 -> reject'), 1000);
+var promise3 = new Promise(function (resolve, reject){
+  setTimeout(function() { reject('promise3 -> reject') }, 1000);
 });
-const promise4 = new Promise((resolve, reject) => {
+var promise4 = new Promise(function (resolve, reject) {
   resolve(promise3);
 });
- promise4.then((value) => {
+ promise4.then(function(value){
    console.log(`promise4 resolve promise3 success value: ${value}`);
- }, (value2) => {
+ }, function (value2) {
    console.log(`promise4 resolve promise3 failed value: ${value2}`);
  });
+
+var promise5 = new Promise(function(resolve1, reject) {
+  resolve1(new Promise(function(resolve2) {
+    resolve2(new Promise(function(resolve3) {
+      resolve3('promise resolve a promise');
+    }))
+  }))
+});
+promise5.then(function(result) {
+  console.log(result);
+})
 
 
 /* ------------------- 错误处理测试 ------------------- */
